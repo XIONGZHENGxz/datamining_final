@@ -207,14 +207,26 @@ def prep(input_path,flag):
 
 	good = np.delete(df,ind,axis=0)
 	return good,miss
+def save_csv(test_path,train_path):
+	X,y,X_test = preprocess()
+	for i in range(X_test.shape[0]):
+		for j in range(X_test.shape[1]):
+			if type(X_test[i,j]) is np.ndarray:
+				X_test[i,j] =np.asscalar(X_test[i,j])
+			if type(X[i,j]) is np.ndarray:
+				X[i,j] =np.asscalar(X[i,j])
+	write_csv(test_path,X_test)	
+	write_csv(train_path,X)	
+
+def write_csv(file_path,data):
+
+	with open(file_path,'wb') as f:
+		w = csv.writer(f, delimiter=',')
+		for i in range(data.shape[0]):
+			w.writerow(data[i,:])
 
 train = 'training.csv'
 test = 'test.csv'
-'''
 #conditional_mean_models(train,test)
 #save(train,test)
-#X,y,X_test = preprocess()
-print X.shape,X_test.shape
-print X_test[0,:]
-print X[0,:]
-'''
+save_csv('X_test.csv','X_train.csv')
