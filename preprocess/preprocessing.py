@@ -32,14 +32,15 @@ def preprocess():
 	return X,y,X_test
 
 def normalize(data,nums):
-	print nums
 	scaler = StandardScaler()
+	data_new = data.copy()
 	for i in nums:
-		data[:,i] = scaler.fit_transform(data[:,i])
-	return data
+		data_new[:,i] = scaler.fit_transform(data_new[:,i])
+	return data_new
 
 def save(input_path,test_path):
 	data,data_test = fill_miss(input_path,test_path)
+	print data[0,:]
 	data_new, label_encoders = label(data,factor)
 	data_test = label_miss(data,fact,data_test,label_encoders,1,nume)
 	print data_new.shape
@@ -85,7 +86,8 @@ def conditional_mean_models(input_path,test_path):
 	total_keep,label_encoders = label(total_keep,labels)
 
 	## label miss
-	label_miss(total_keep,labels,miss_test_keep,label_encoders,0,nums)
+	miss_test_keep = label_miss(total_keep,labels,miss_test_keep,label_encoders,0,nums)
+	print 'miss_test_keep,',miss_test_keep[0,:]
 
 	##one hot encode 
 	total_keep,encoder= encode(total_keep,labels)
@@ -108,19 +110,21 @@ def label_miss(total_keep,labels,miss,label_encoders,index,nums):
 
 	## get all labels
 	allLabels = getAllLabels(total_keep,labels)
+	total_keep_normalized = total_keep
+	miss_normalized = miss
 	if index==1:
-		total_keep = normalize(total_keep,numeric)
+		total_keep_normalized = normalize(total_keep_normalized,numeric)
 	else:
-		total_keep = normalize(total_keep,nums)
+		total_keep_normalized = normalize(total_keep_normalized,nums)
 
-	miss = normalize(miss,nums)
-
+	miss_normalized = normalize(miss_normalized,nums)
+	print 'miss...',miss[0,:]
 	#---check new labels-----#
 	for i in range(miss.shape[0]):
 		nb = -1
 		for j in range(len(labels)):
 			if miss[i,labels[j]] not in allLabels[j]:
-				nb = getNB(miss[i,:],total_keep,labels,nums,index)
+				nb = getNB(miss_normalized[i,:],total_keep_normalized,labels,nums,index)
 				break
 
 		#-----if no new label-----#
@@ -132,7 +136,7 @@ def label_miss(total_keep,labels,miss,label_encoders,index,nums):
 				miss[i,:] = total_keep[nb,:]
 			else:
 				miss[i,2:] = total_keep[nb,3:]
-
+	print 'miss..labeled...,',miss[0,:]
 	return miss
 
 def fill_miss(input_path,test_path):
@@ -179,14 +183,6 @@ def encode(data,factor):
 	data = onehot_enc.fit_transform(data).toarray()
 	return data,onehot_enc
 
-def processDate(row,index):
-	date = row[index].split('/')
-	if len(date) == 3:
-		d1 = datetime.datetime(int(date[2]), int(date[0]), int(date[1]))
-		d2 = datetime.datetime.now()
-		row[index] = (d2-d1).days
-	return row
-
 #----find out numeric missing-----#
 # return integral rows and missing rows 
 
@@ -214,6 +210,11 @@ def prep(input_path,flag):
 
 train = 'training.csv'
 test = 'test.csv'
-
-X,y,X_test = preprocess()
+'''
+#conditional_mean_models(train,test)
+#save(train,test)
+#X,y,X_test = preprocess()
 print X.shape,X_test.shape
+print X_test[0,:]
+print X[0,:]
+'''
