@@ -38,6 +38,30 @@ def preprocess_new():
 	y = np.load('y.npy')
 	return X_train,y,X_test
 
+def preprocess_new2():
+	X_train,y,X_test = one_hot_encode()
+	#----------------- try normalize before pca ----------
+	X_train = preprocessing.scale(X_train)
+	X_test = preprocessing.scale(X_test)
+
+	X_train_new,X_test_new = pca(0.90,X_train,X_test)
+	np.save('X_train_pca.npy',X_train_new)
+	np.save('X_test_pca.npy',X_test_new)
+
+def one_hot_encode():
+	X_train = np.load('X_train_labeled.npy')
+	X_test = np.load('X_test_labeled.npy')
+	X_total = np.load('X_total_labeled.npy')
+	print X_total.shape
+	y = np.load('y.npy')
+	onehot_enc = preprocessing.OneHotEncoder(categorical_features = factor_new)
+	X_total = onehot_enc.fit_transform(X_total).toarray()
+	print X_total.shape
+	X_train_encoded = X_total[0 : X_train.shape[0], :]
+	X_test_encoded = X_total[X_train.shape[0] : X_train.shape[0] + X_test.shape[0], :]
+	print X_train_encoded.shape,X_test_encoded.shape
+	return X_train_encoded,y,X_test_encoded
+	
 def save_new():
 	train = np.load('train_miss_filled.npy')	
 	test = np.load('test_miss_filled.npy')
@@ -50,11 +74,11 @@ def save_new():
 	for i in factor_new:
 		le = preprocessing.LabelEncoder()
 		X_total[:,i] = le.fit_transform(X_total[:,i])
-	print X_total.shape
 
 	# ---------------split dataset to get origin training and test set --------
 	X_train_labeled = X_total[0 : X_train.shape[0], :]
 	X_test_labeled = X_total[X_train.shape[0] : X_train.shape[0] + X_test.shape[0], :]
+	np.save('X_total_labeled.npy',X_total)
 	np.save('X_train_labeled.npy',X_train_labeled)
 	np.save('X_test_labeled.npy',X_test_labeled)
 	np.save('y.npy',y)
@@ -107,7 +131,7 @@ def conditional_mean_models(input_path,test_path):
 	nums = [0,8]
 	prices = range(18,26)
 	good,miss = prep(input_path,0)
-	good_test,miss_test = prep(test_path,1)
+	test_total,miss_test= prep_test(test_path)
 	total = np.vstack([good,miss])
 
 	total_keep = total[:,keep]
@@ -189,10 +213,10 @@ def label_miss(total_keep_labeled,total_keep,labels,miss,label_encoders,index,nu
 	return miss,new_labels,count
 
 def fill_miss(input_path,test_path):
-	models,encoded_miss,encoded_miss_test= conditional_mean_models(input_path,test_path)
+	models,encoded_miss,encoded_miss_test = conditional_mean_models(input_path,test_path)
 	print encoded_miss_test.shape
 	good,miss = prep(input_path,0)
-	good_test,miss_test = prep(test_path,1)
+	test_total,miss_test = prep_test(test_path)
 	
 	for i in range(miss.shape[0]):
 		X = encoded_miss[i,:]
@@ -207,9 +231,15 @@ def fill_miss(input_path,test_path):
 		for j in range(miss_test.shape[1]):
 			if j>=17 and j<=24 and (miss_test[i,j]==0 or miss_test[i,j]==1 or math.isnan(miss_test[i,j])):
 				miss_test[i,j] = models[j-17].predict(X)
+
+	count = 0
+	for i in range(test_total.shape[0]):	
+		if test_total[i,-1]==1:
+			test_total[i,:-1] = miss_test[count,:]
+			count+=1
 	
 	train = np.vstack([good,miss])
-	test = np.vstack([good_test,miss_test])
+	test = test_total[:,:-1]
 	print train.shape,test.shape
 	np.save('train_miss_filled.npy',train)
 	np.save('test_miss_filled.npy',test)
@@ -280,8 +310,34 @@ def save_csv(test_path,train_path):
 	write_csv(test_path,X_test)	
 	write_csv(train_path,X)	
 
+def prep_test(input_path):
+	df = pd.read_csv(input_path,delimiter=',')
+	df = df.as_matrix()
+	w = df.shape[0]
+	h = df.shape[1]
+
+	df = np.insert(df,df.shape[1],np.zeros((1,df.shape[0])),axis=1)
+
+	for i in range(w):
+		for j in range(h):
+			if j not in range(17,25) and type(df[i,j])==float and math.isnan(df[i,j]):
+				df[i,j] = 'UNKNOWN'
+
+		for j in range(h):
+			if j>=17 and j<=24 and (df[i,j]==0 or df[i,j]==1 or math.isnan(df[i,j])):
+				df[i,-1] = 1
+				break
+	miss = np.empty([0,h])
+	for i in range(w):
+		if df[i,-1]==1:
+			tmp = np.reshape(df[i,:-1],[1,df[i,:-1].shape[0]])
+			miss = np.append(miss,tmp,axis=0)
+	print miss.shape
+	return df,miss
+
 def save_csv_new(test_path,train_path):
 	X,y,X_test = preprocess_new()
+	print X[0],X_test[0]
 	for i in range(X_test.shape[0]):
 		for j in range(X_test.shape[1]):
 			if type(X_test[i,j]) is np.ndarray:
@@ -300,11 +356,29 @@ def write_csv(file_path,data):
 		for i in range(data.shape[0]):
 			w.writerow(data[i,:])
 
+def pca(tol,X_train,X_test):
+	pca = PCA()
+	pca.fit(X_train)
+	total = 0 
+	count=0
+	for var in pca.explained_variance_ratio_:
+		total+=var
+		if total>tol:
+			break
+		count+=1
+	pca = PCA(n_components=count)
+	X_train = pca.fit_transform(X_train)
+	X_test = pca.transform(X_test)
+	return X_train,X_test
+
 train_path = 'training.csv'
 test_path = 'test.csv'
-
+#prep_test(test_path)
 #conditional_mean_models(train,test)
 #train,test = fill_miss(train_path,test_path)
 save_new()
-X,y,X_test = preprocess_new()
+#X_train,y,X_test = one_hot_encode()
+preprocess_new2()
+#X,y,X_test = preprocess_new()
 #save_csv('X_test.csv','X_train.csv')
+#save_csv_new('X_test_new.csv','X_train_new.csv')
