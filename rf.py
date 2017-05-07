@@ -3,7 +3,7 @@ from model import model, index
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import f1_score, confusion_matrix
 from sklearn.model_selection import train_test_split
-from preprocess.preprocessing import preprocess
+# from preprocess.preprocessing import preprocess
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics.scorer import make_scorer
 from sklearn.model_selection import cross_val_score
@@ -20,22 +20,27 @@ class RF(model):
         y = y.astype(int)
         best_f1score, best_clf = 0, None
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=42)
-        for n_estimators in [10, 20, 30, 40, 50]:
-            for min_samples_leaf in np.arange(1, 21, 10):
-                for max_features in ('auto', 'sqrt', 'log2'):
-                    #rf = RandomForestClassifier(
-                    #        n_estimators = n_estimators,
-                    #        min_samples_leaf = min_samples_leaf,
-                    #        max_features = max_features
-                    #        )
-                    rf = RandomForestClassifier()
+        # for n_estimators in [10, 20, 30, 40, 50]:
+        for n_estimators in [50]:
+            # for min_samples_leaf in np.arange(1, 21, 10):
+            for min_samples_leaf in [20]:
+                # for max_features in ('auto', 'sqrt', 'log2'):
+                for max_features in [None]:
+                    rf = RandomForestClassifier(
+                           n_estimators = n_estimators,
+                           min_samples_leaf = min_samples_leaf,
+                           max_features = max_features,
+                           class_weight = "balanced"
+                           )
+                    # rf = RandomForestClassifier()
                     rf.fit(X_train, y_train)
                     y_pred = rf.predict(X_test)
                     curr_score = f1_score(y_test, y_pred)
                     if(curr_score >= best_f1score):
                         best_f1score = curr_score
                         best_clf = rf
-                        print "get f1 score: ", curr_score
+                    print "get f1 score: ", curr_score
+        
 
         # my_scorer = make_scorer(f1_score)
         # rf = RandomForestClassifier()
@@ -67,7 +72,12 @@ class RF(model):
 
 
 # data = np.load('preprocess/data.npy')
-X, y, X_submit = preprocess()
+# X, y, X_submit = preprocess()
+X = np.load("preprocess/X_train_labeled.npy")
+X_submit = np.load("preprocess/X_test_labeled.npy")
+y = np.load("preprocess/y.npy")
+
+
 y = y.astype(int)
 y = y.reshape(y.shape[0], 1)
 # data = data[:,1:]   #the first col is line number
