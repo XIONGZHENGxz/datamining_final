@@ -2,6 +2,7 @@ import numpy as np
 import math
 import pandas as pd
 import math
+import os
 from sklearn.linear_model import Ridge
 from sets import Set
 import matplotlib.pyplot as plt
@@ -66,7 +67,6 @@ def save_new():
 	train = np.load('train_miss_filled.npy')	
 	test = np.load('test_miss_filled.npy')
 	y = train[:,1]
-	print y
 	X_train = np.delete(train,[0,1,2,13],axis = 1)
 	X_test = np.delete(test,[0,1,12], axis = 1)
 	X_total = np.vstack([X_train,X_test])	
@@ -327,12 +327,13 @@ def prep_test(input_path):
 			if j>=17 and j<=24 and (df[i,j]==0 or df[i,j]==1 or math.isnan(df[i,j])):
 				df[i,-1] = 1
 				break
+
 	miss = np.empty([0,h])
 	for i in range(w):
 		if df[i,-1]==1:
 			tmp = np.reshape(df[i,:-1],[1,df[i,:-1].shape[0]])
 			miss = np.append(miss,tmp,axis=0)
-	print miss.shape
+
 	return df,miss
 
 def save_csv_new(test_path,train_path):
@@ -375,10 +376,10 @@ train_path = 'training.csv'
 test_path = 'test.csv'
 #prep_test(test_path)
 #conditional_mean_models(train,test)
-#train,test = fill_miss(train_path,test_path)
+train,test = fill_miss(train_path,test_path)
 save_new()
 #X_train,y,X_test = one_hot_encode()
-preprocess_new2()
-#X,y,X_test = preprocess_new()
+#preprocess_new2()
+X,y,X_test = preprocess_new()
 #save_csv('X_test.csv','X_train.csv')
-#save_csv_new('X_test_new.csv','X_train_new.csv')
+save_csv_new('X_test_new.csv','X_train_new.csv')
