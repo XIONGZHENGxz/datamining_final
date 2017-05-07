@@ -16,6 +16,7 @@ m = {31:6731,33:1277}
 
 keep = [5,6,7,8,9,10,11,12,14,15,16]  
 factor = [3,6,7,8,9,10,11,12,15,16,17,26,27,28,29,30,32]
+factor_new = [0,3,4,5,6,7,8,9,11,12,13,22,23,24,25,26,28]
 fact = [x-1 for x in factor]
 numeric = [4,5,14,18,19,20,21,22,23,24,25,31,33]
 nume = [x-1 for x in numeric]
@@ -31,6 +32,33 @@ def preprocess():
 	X = data[:,2:]
 	return X,y,X_test
 
+def preprocess_new():
+	X_train = np.load('X_train_labeled.npy')
+	X_test = np.load('X_test_labeled.npy')
+	y = np.load('y.npy')
+	return X_train,y,X_test
+
+def save_new():
+	train = np.load('train_miss_filled.npy')	
+	test = np.load('test_miss_filled.npy')
+	y = train[:,1]
+	print y
+	X_train = np.delete(train,[0,1,2,13],axis = 1)
+	X_test = np.delete(test,[0,1,12], axis = 1)
+	X_total = np.vstack([X_train,X_test])	
+	
+	for i in factor_new:
+		le = preprocessing.LabelEncoder()
+		X_total[:,i] = le.fit_transform(X_total[:,i])
+	print X_total.shape
+
+	# ---------------split dataset to get origin training and test set --------
+	X_train_labeled = X_total[0 : X_train.shape[0], :]
+	X_test_labeled = X_total[X_train.shape[0] : X_train.shape[0] + X_test.shape[0], :]
+	np.save('X_train_labeled.npy',X_train_labeled)
+	np.save('X_test_labeled.npy',X_test_labeled)
+	np.save('y.npy',y)
+	
 def normalize(data,nums):
 	scaler = StandardScaler()
 	data_new = data.copy()
@@ -41,13 +69,15 @@ def normalize(data,nums):
 def save(input_path,test_path):
 	data,data_test = fill_miss(input_path,test_path)
 	print 'complete filling missing data...'
-	data_new, label_encoders = label(data,factor)
-	data_test = label_miss(data_new,data,fact,data_test,label_encoders,1,nume)
+	data_new, label_encoders,max_labels = label(data,factor)
+	data_test,miss_labels,count = label_miss(data_new,data,fact,data_test,label_encoders,1,nume,max_labels)
 	print 'complete labeling test data...'
 	print data_new.shape
 	print data_test.shape
 	np.save('data.npy',data_new)	
 	np.save('data_test.npy',data_test)	
+	print miss_labels
+	print 'number of miss labels...',count
 
 def getNB(sample,train,factor,numeric,flag):
 	min_dist = 100000
@@ -84,10 +114,10 @@ def conditional_mean_models(input_path,test_path):
 	miss_test_keep = miss_test[:,[x-1 for x in keep]]
 
 	## label training 
-	total_keep_labeled,label_encoders = label(total_keep,labels)
+	total_keep_labeled,label_encoders,max_labels= label(total_keep,labels)
 
 	## label miss
-	miss_test_keep = label_miss(total_keep_labeled,total_keep,labels,miss_test_keep,label_encoders,0,nums)
+	miss_test_keep,_,_ = label_miss(total_keep_labeled,total_keep,labels,miss_test_keep,label_encoders,0,nums,max_labels)
 	print 'miss_test_keep,',miss_test_keep[0,:]
 
 	##one hot encode 
@@ -108,7 +138,7 @@ def conditional_mean_models(input_path,test_path):
 	print 'complete building models...'
 	return models,miss,miss_test_keep
 
-def label_miss(total_keep_labeled,total_keep,labels,miss,label_encoders,index,nums):
+def label_miss(total_keep_labeled,total_keep,labels,miss,label_encoders,index,nums,max_labels):
 
 	## get all labels
 	labels_new = labels
@@ -124,32 +154,39 @@ def label_miss(total_keep_labeled,total_keep,labels,miss,label_encoders,index,nu
 		total_keep_normalized = normalize(total_keep_normalized,nums)
 	
 	miss_normalized = normalize(miss_normalized,nums)
+	new_labels = []
 	print 'miss...',miss[0,:]
 	#---check new labels-----#
 	count = 0
 	for i in range(miss.shape[0]):
-		nb = -1
-		for j in range(len(labels)):
-			if miss[i,labels[j]] not in allLabels[j]:
-				nb,dist = getNB(miss_normalized[i,:],total_keep_normalized,labels,nums,index)
-				break
-
-		#-----if no new label-----#
-		if nb == -1:
-			for k in range(len(labels)):
-				x = np.asarray(miss[i,labels[k]]).reshape(1, -1)[0,:]
-				y = label_encoders[k].transform(x)
-				miss[i,labels[k]] = np.asscalar(y)
-		else:
-			count+=1
 			if index==0:
-				miss[i,:] = total_keep_labeled[nb,:]
-			else:
-				miss[i,2:] = total_keep_labeled[nb,3:]
+				nb = -1
+				for j in range(len(labels)):
+					if miss[i,labels[j]] not in allLabels[j]:
+						nb,dist = getNB(miss_normalized[i,:],total_keep_normalized,labels,nums,index)
+						break
 
-	print 'number of new labels...',count
+				if nb == -1:
+					for k in range(len(labels)):
+						x = np.asarray(miss[i,labels[k]]).reshape(1, -1)[0,:]
+						y = label_encoders[k].transform(x)
+						miss[i,labels[k]] = np.asscalar(y)
+				else:
+					count+=1
+					if index==0:
+						miss[i,:] = total_keep_labeled[nb,:]
+			else:
+				for j in range(len(labels)):
+					if miss[i,labels[j]] not in allLabels[j]:
+						new_labels.append(miss[i,labels[j]])
+						miss[i,labels[j]] = max_labels[j]+1
+					else:
+						x = np.asarray(miss[i,labels[j]]).reshape(1, -1)[0,:]
+						y = label_encoders[j].transform(x)
+						miss[i,labels[j]] = np.asscalar(y)
+
 	print 'miss..labeled...,',miss[0,:]
-	return miss
+	return miss,new_labels,count
 
 def fill_miss(input_path,test_path):
 	models,encoded_miss,encoded_miss_test= conditional_mean_models(input_path,test_path)
@@ -170,8 +207,13 @@ def fill_miss(input_path,test_path):
 		for j in range(miss_test.shape[1]):
 			if j>=17 and j<=24 and (miss_test[i,j]==0 or miss_test[i,j]==1 or math.isnan(miss_test[i,j])):
 				miss_test[i,j] = models[j-17].predict(X)
-
-	return np.vstack([good,miss]),np.vstack([good_test,miss_test])
+	
+	train = np.vstack([good,miss])
+	test = np.vstack([good_test,miss_test])
+	print train.shape,test.shape
+	np.save('train_miss_filled.npy',train)
+	np.save('test_miss_filled.npy',test)
+	return train,test
 
 def getAllLabels(data,factor):
 	all_labels = []
@@ -186,13 +228,16 @@ def getAllLabels(data,factor):
 	return all_labels
 
 def label(data,factor):
+	max_labels = []
 	label_encoders = []
 	data_new = data.copy()
 	for i in factor:
 		le = preprocessing.LabelEncoder()
 		data_new[:,i] = le.fit_transform(data[:,i])
+		max_labels.append(max(data_new[:,i]))
 		label_encoders.append(le)
-	return data_new,label_encoders
+
+	return data_new,label_encoders,max_labels
 
 def encode(data,factor):
 	onehot_enc = preprocessing.OneHotEncoder(categorical_features=factor)
@@ -223,6 +268,7 @@ def prep(input_path,flag):
 
 	good = np.delete(df,ind,axis=0)
 	return good,miss
+
 def save_csv(test_path,train_path):
 	X,y,X_test = preprocess()
 	for i in range(X_test.shape[0]):
@@ -234,6 +280,19 @@ def save_csv(test_path,train_path):
 	write_csv(test_path,X_test)	
 	write_csv(train_path,X)	
 
+def save_csv_new(test_path,train_path):
+	X,y,X_test = preprocess_new()
+	for i in range(X_test.shape[0]):
+		for j in range(X_test.shape[1]):
+			if type(X_test[i,j]) is np.ndarray:
+				X_test[i,j] =np.asscalar(X_test[i,j])
+			if type(X[i,j]) is np.ndarray:
+				X[i,j] =np.asscalar(X[i,j])
+	write_csv(test_path,X_test)	
+	write_csv(train_path,X)	
+
+	
+
 def write_csv(file_path,data):
 
 	with open(file_path,'wb') as f:
@@ -241,9 +300,11 @@ def write_csv(file_path,data):
 		for i in range(data.shape[0]):
 			w.writerow(data[i,:])
 
-train = 'training.csv'
-test = 'test.csv'
+train_path = 'training.csv'
+test_path = 'test.csv'
 
 #conditional_mean_models(train,test)
-#save(train,test)
-save_csv('X_test.csv','X_train.csv')
+#train,test = fill_miss(train_path,test_path)
+save_new()
+X,y,X_test = preprocess_new()
+#save_csv('X_test.csv','X_train.csv')
