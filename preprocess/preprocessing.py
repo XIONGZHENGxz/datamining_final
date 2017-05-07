@@ -3,8 +3,10 @@ import math
 import pandas as pd
 import math
 import os
+import pickle
 from sklearn.linear_model import Ridge
 from sets import Set
+from imblearn.combine import SMOTEENN
 import matplotlib.pyplot as plt
 from sklearn import preprocessing
 from sklearn.decomposition import PCA
@@ -33,6 +35,12 @@ def preprocess():
 	X = data[:,2:]
 	return X,y,X_test
 
+def sample(X, y):
+	# Combine over- and under-sampling using SMOTE and Edited Nearest Neighbours.
+	sme = SMOTEENN(random_state=42)
+	X_res, y_res = sme.fit_sample(X, y)
+	return X_res,y_res
+
 def preprocess_new():
 	X_train = np.load('X_train_labeled.npy')
 	X_test = np.load('X_test_labeled.npy')
@@ -45,7 +53,7 @@ def preprocess_new2():
 	X_train = preprocessing.scale(X_train)
 	X_test = preprocessing.scale(X_test)
 
-	X_train_new,X_test_new = pca(0.90,X_train,X_test)
+	X_train_new,X_test_new = pca(0.90,X_train,X_test,'pca.obj')
 	np.save('X_train_pca.npy',X_train_new)
 	np.save('X_test_pca.npy',X_test_new)
 
@@ -214,7 +222,7 @@ def label_miss(total_keep_labeled,total_keep,labels,miss,label_encoders,index,nu
 
 def fill_miss(input_path,test_path):
 	models,encoded_miss,encoded_miss_test = conditional_mean_models(input_path,test_path)
-	print encoded_miss_test.shape
+
 	good,miss = prep(input_path,0)
 	test_total,miss_test = prep_test(test_path)
 	
@@ -243,6 +251,10 @@ def fill_miss(input_path,test_path):
 	print train.shape,test.shape
 	np.save('train_miss_filled.npy',train)
 	np.save('test_miss_filled.npy',test)
+
+	print 'number of miss in training...,',encoded_miss.shape
+	print 'number of miss in testing...,',encoded_miss_test.shape
+
 	return train,test
 
 def getAllLabels(data,factor):
@@ -342,9 +354,9 @@ def save_csv_new(test_path,train_path):
 	for i in range(X_test.shape[0]):
 		for j in range(X_test.shape[1]):
 			if type(X_test[i,j]) is np.ndarray:
-				X_test[i,j] =np.asscalar(X_test[i,j])
+				X_test[i,j] = np.asscalar(X_test[i,j])
 			if type(X[i,j]) is np.ndarray:
-				X[i,j] =np.asscalar(X[i,j])
+				X[i,j] = np.asscalar(X[i,j])
 	write_csv(test_path,X_test)	
 	write_csv(train_path,X)	
 
@@ -357,7 +369,7 @@ def write_csv(file_path,data):
 		for i in range(data.shape[0]):
 			w.writerow(data[i,:])
 
-def pca(tol,X_train,X_test):
+def pca(tol,X_train,X_test,file_path):
 	pca = PCA()
 	pca.fit(X_train)
 	total = 0 
@@ -367,11 +379,23 @@ def pca(tol,X_train,X_test):
 		if total>tol:
 			break
 		count+=1
+	out = open(file_path,'wb')	
+	pickle.dump(pca,out)	
 	pca = PCA(n_components=count)
 	X_train = pca.fit_transform(X_train)
 	X_test = pca.transform(X_test)
 	return X_train,X_test
 
+def plot_pca(file_path):
+	pca = pickle.load(file_path)
+	plt.figure()
+	plt.plot(pca.explained_variance_ratio_)
+	plt.title('PCA on All Features')
+	plt.xlabel('Number of Components')
+	plt.ylabel('Variance Ratio')
+	plt.savefig(file_path)
+
+'''
 train_path = 'training.csv'
 test_path = 'test.csv'
 #prep_test(test_path)
@@ -379,7 +403,9 @@ test_path = 'test.csv'
 train,test = fill_miss(train_path,test_path)
 save_new()
 #X_train,y,X_test = one_hot_encode()
-#preprocess_new2()
+preprocess_new2()
 X,y,X_test = preprocess_new()
 #save_csv('X_test.csv','X_train.csv')
-save_csv_new('X_test_new.csv','X_train_new.csv')
+preprocess_new2()
+#save_csv_new('X_test_new.csv','X_train_new.csv')
+'''
