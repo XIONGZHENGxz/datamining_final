@@ -1,5 +1,6 @@
 import numpy as np
 from model import model, index
+from sklearn import tree
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import f1_score, confusion_matrix
 from sklearn.model_selection import train_test_split
@@ -67,6 +68,7 @@ class DT(model):
         y_train = data_train[:, 0]
         # self.rf_classifier.fit(X_train, y_train)
         self.dt_classifier = self.gridSearch(X_train, y_train)
+        tree.export_graphviz(self.dt_classifier, out_file='decisionTree.dot')
 
     def predict(self, X_pred):
         y_pred = self.dt_classifier.predict(X_pred)
