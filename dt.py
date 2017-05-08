@@ -20,13 +20,12 @@ class DT(model):
 
     # def train(self, data_train):
     def gridSearch(self, X_train, y_train):
-        # parameters = {'learning_rate' : np.arange(.1, 1, .1),
-        #             'n_estimators' : np.arange(10, 40, 10),
-        #             'max_depth' : 3,
-        #             'min_samples_leaf' : np.arange(1, 100, 30),
-        #             'max_features' : None,
-        #             'random_stae' : 233
-        #             }
+        # parameters:
+        # min_sample_per_leaf: too small, overfit
+        # max_depth: too large, overfit. default none.
+
+
+  
         # clf = GridSearchCV(svr, parameters)
         # f1_scorer = make_scorer(f1_score)
 
@@ -36,23 +35,24 @@ class DT(model):
         best_f1score, best_clf = 0, None
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=42)
         # for min_samples_leaf in np.arange(1, 21, 10):
-        # for min_samples_leaf in np.arange(1, 40, 10):
-        for min_samples_leaf in [21]:
+        for min_samples_leaf in np.arange(20, 60, 5):
+        # for min_samples_leaf in [21]:
             # # for max_features in ('auto', 'sqrt', 'log2'):
             # for max_features in ['sqrt', 'log2', None]:
             for max_features in [None]:
-                dt = DecisionTreeClassifier(
-                       min_samples_leaf = min_samples_leaf,
-                       max_features = max_features
-                       )
-                # rf = RandomForestClassifier()
-                dt.fit(X_train, y_train)
-                y_pred = dt.predict(X_test)
-                curr_score = f1_score(y_test, y_pred)
-                if(curr_score >= best_f1score):
-                    best_f1score = curr_score
-                    best_clf = dt
-                print "min_samples_leaf:", min_samples_leaf, "max_features", max_features, "f1 score: ", curr_score
+                for max_depth in np.append([None], np.arange(4, 20, 2)):
+                    dt = DecisionTreeClassifier(
+                           min_samples_leaf = min_samples_leaf,
+                           max_features = max_features
+                           )
+                    # rf = RandomForestClassifier()
+                    dt.fit(X_train, y_train)
+                    y_pred = dt.predict(X_test)
+                    curr_score = f1_score(y_test, y_pred)
+                    if(curr_score >= best_f1score):
+                        best_f1score = curr_score
+                        best_clf = dt
+                    print "min_samples_leaf:", min_samples_leaf, "max_features", max_features, " max_depth: ", max_depth, "f1 score: ", curr_score
         
 
         # my_scorer = make_scorer(f1_score)

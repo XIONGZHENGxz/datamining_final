@@ -71,7 +71,7 @@ class RF(model):
         return y_pred
 
     #def evaluate(self, data_test):
-    def evaluate(self, data_test):
+    def evaluate(self, data_test):  # including f1score, auc score, roc curve, lift chart
         X_test = data_test[:,1:]
         y_test = data_test[:,0]
         y_test = y_test.astype(int)
@@ -90,7 +90,9 @@ class RF(model):
         self.fpr_rf_lm, self.tpr_rf_lm = fpr_rf_lm, tpr_rf_lm
         auc_score = auc(fpr_rf_lm, tpr_rf_lm)
         eval_index = index(auc_score, f1score)
+        # print "y_pred_rf_lm: ", y_pred_rf_lm
         self.roc_curve("roc_rf")
+        self.lift_chart(y_pred, y_pred_rf_lm, "liftchart_rf", "liftchart_rf")
         return eval_index
         # return f1score, cm, auc_score
 
@@ -104,6 +106,29 @@ class RF(model):
         plt.title('Receiver operating characteristic')
         plt.xlabel('False Positive')
         plt.ylabel('True Positive')
+        plt.savefig(file_path)
+
+    def lift_chart(self, y_test,y_score,title,file_path):
+        pos = y_test
+        npos = np.sum(pos)
+        index = np.argsort(y_score)
+        index = index[::-1]
+        sort_pos = pos[index]
+        cpos = np.cumsum(sort_pos) 
+
+        rappel = cpos/float(npos)
+
+        n = y_test.shape[0]
+        taille = np.arange(start=1,stop=n+1,step=1)
+
+        taille = taille / float(n)
+        import matplotlib.pyplot as plt
+        #title and axis labels
+        plt.title(title)
+        plt.xlabel('Sample Size')
+        plt.ylabel('Percentage of Badbuy Found')
+        plt.scatter(taille,taille,marker='.',linewidths=0.05,color='blue')
+        plt.scatter(taille,rappel,marker='.',color='red')
         plt.savefig(file_path)
 
         

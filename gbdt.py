@@ -116,6 +116,7 @@ class GBDT(model):
         # print "auc score; ", auc_score
         eval_index = index(auc_score, f1score)
         self.roc_curve("roc_gbdt")
+        self.lift_chart(y_pred, y_pred_gbdt_lm, "liftchart_gbdt", "liftchart_gbdt")
         return eval_index
 
     def roc_curve(self, file_path):
@@ -127,6 +128,29 @@ class GBDT(model):
         plt.title('Receiver operating characteristic')
         plt.xlabel('False Positive')
         plt.ylabel('True Positive')
+        plt.savefig(file_path)
+
+    def lift_chart(self, y_test,y_score,title,file_path):
+        pos = y_test
+        npos = np.sum(pos)
+        index = np.argsort(y_score)
+        index = index[::-1]
+        sort_pos = pos[index]
+        cpos = np.cumsum(sort_pos) 
+
+        rappel = cpos/float(npos)
+
+        n = y_test.shape[0]
+        taille = np.arange(start=1,stop=n+1,step=1)
+
+        taille = taille / float(n)
+        import matplotlib.pyplot as plt
+        #title and axis labels
+        plt.title(title)
+        plt.xlabel('Sample Size')
+        plt.ylabel('Percentage of Badbuy Found')
+        plt.scatter(taille,taille,marker='.',linewidths=0.05,color='blue')
+        plt.scatter(taille,rappel,marker='.',color='red')
         plt.savefig(file_path)
 
 
