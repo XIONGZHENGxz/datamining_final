@@ -1,5 +1,6 @@
 import numpy as np
 from model import model, index
+import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import f1_score, confusion_matrix, auc, roc_curve
 from sklearn.model_selection import train_test_split
@@ -86,11 +87,24 @@ class RF(model):
         rf_lm.fit(rf_enc.transform(rf.apply(self.X_train_lr)), self.y_train_lr)
         y_pred_rf_lm = rf_lm.predict_proba(rf_enc.transform(rf.apply(X_test)))[:, 1]
         fpr_rf_lm, tpr_rf_lm, _ = roc_curve(y_test, y_pred_rf_lm)
+        self.fpr_rf_lm, self.tpr_rf_lm = fpr_rf_lm, tpr_rf_lm
         auc_score = auc(fpr_rf_lm, tpr_rf_lm)
         eval_index = index(auc_score, f1score)
+        self.roc_curve("roc_rf")
         return eval_index
         # return f1score, cm, auc_score
 
+    # plot roc curve
+    def roc_curve(self, file_path):
+        print 'ploting roc curve >>>>'
+        plt.figure()
+        plt.plot(self.fpr_rf_lm,self.tpr_rf_lm,color='blue',label='ROC curve')
+        plt.xlim([0.0,1.0])
+        plt.ylim([0.0,1.0])
+        plt.title('Receiver operating characteristic')
+        plt.xlabel('False Positive')
+        plt.ylabel('True Positive')
+        plt.savefig(file_path)
 
         
 
@@ -124,11 +138,15 @@ y_submit = rf_classifier.predict(X_submit)
 # print "size of X_test: ", X_submit.shape
 writeToFile('rf_result.csv', y_submit)
 
-print "f1_score: ",  eval_index.AUC
+
+
+
+
+print "f1_score: ",  eval_index.F_score
 # print "confusion matrix: "
 # print cm
 
-print "auc score: ", eval_index.F_score
+print "auc score: ", eval_index.AUC
 
 
 
