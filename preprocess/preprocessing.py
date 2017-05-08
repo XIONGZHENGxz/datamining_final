@@ -386,14 +386,28 @@ def pca(tol,X_train,X_test,file_path):
 	X_test = pca.transform(X_test)
 	return X_train,X_test
 
-def plot_pca(file_path):
-	pca = pickle.load(file_path)
+def plot_pca(file_path,image_path1,image_path2):
+	in_file = open(file_path,'rb')
+	pca = pickle.load(in_file)
 	plt.figure()
 	plt.plot(pca.explained_variance_ratio_)
 	plt.title('PCA on All Features')
 	plt.xlabel('Number of Components')
-	plt.ylabel('Variance Ratio')
-	plt.savefig(file_path)
+	plt.ylabel('Explained Variance Ratio by Each Component')
+	plt.savefig(image_path1)
+	total = []
+	tmp = 0
+	for var in pca.explained_variance_ratio_:
+		total.append(tmp)
+		tmp+=var
+
+	plt.figure()
+	plt.plot(total)
+	plt.title('PCA on All Features')
+	plt.xlabel('Number of Components')
+	plt.ylabel('Total Explained Variance Ratio')
+	plt.savefig(image_path2)
+	
 
 '''
 train_path = 'training.csv'
@@ -409,3 +423,4 @@ X,y,X_test = preprocess_new()
 preprocess_new2()
 #save_csv_new('X_test_new.csv','X_train_new.csv')
 '''
+#preprocess_new2()

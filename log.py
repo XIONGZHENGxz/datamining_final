@@ -32,8 +32,8 @@ class log(model):
 		y = np.array(y,dtype='|S4')
 		y = y.astype(np.int)
 		print 'training >>>>'
-		best_C = self.gridSearch(X,y)
-		self.clf = LogisticRegression(C=best_C,class_weight = 'balanced')
+		# best_C = self.gridSearch(X,y)
+		self.clf = LogisticRegression(C=8,class_weight = 'balanced')
 		self.clf.fit(X,y)
 
     def predict(self, X_pred):
@@ -66,7 +66,7 @@ class log(model):
 		plt.xlabel('False Positive')
 		plt.ylabel('True Positive')
 		plt.savefig(file_path)
-
+'''
 os.chdir('./preprocess')
 X = np.load('X_train_pca.npy')
 X_submit = np.load('X_test_pca.npy')
@@ -87,8 +87,9 @@ print 'auc: ',auc
 print 'score: ',score
 log_clf.roc_curve(X_test,y_test,'log_roc.png')
 filename = 'log_model.asv'
-pickle.dump(log_clf,filename)
+out = open(filename,'wb')
+pickle.dump(log_clf,out)
 
 
 
-
+'''
