@@ -177,10 +177,80 @@ def visual_CAAP():
 	plt.xlabel('MMRCurrentAuctionAveragePrice')
 	plt.savefig('CAAP.png')
 
+def scatter_odo_AAAP():
+	plt.figure()
+	plt.scatter(train[:,10],train[:,14])
+	plt.title('Scatter Plot')
+	plt.xlabel('Odometer')
+	plt.ylabel('MMRCurrentAuctionAveragePrice')
+	plt.savefig('Odo_appp.png')
+
+def scatter_age_AAAP():
+	plt.figure()
+	plt.scatter(train[:,2],train[:,14])
+	plt.title('Scatter Plot')
+	plt.xlabel('Vehicle Age')
+	plt.ylabel('MMRCurrentAuctionAveragePrice')
+	plt.savefig('VehAge_appp.png')
+
+def scatter_acq_prices():
+	plt.figure()
+	plt.title('Scatter Plot of Acquisition Price')
+	plt.scatter(train[:,14], train[:,15])
+	plt.xlabel('MMRAcquisitionAuctionAveragePrice')
+	plt.ylabel('MMRAcquisitionAuctionCleanPrice')
+	plt.savefig('aaap_aacp.png')
+
+	plt.figure()
+	plt.title('Scatter Plot of Acquisition Price')
+	plt.scatter(train[:,15], train[:,16])
+	plt.xlabel('MMRAcquisitionAuctionCleanPrice')
+	plt.ylabel('MMRAcquisitionRetailAveragePrice')
+	plt.savefig('aacp_arap.png')
+
+	plt.figure()
+	plt.title('Scatter Plot of Acquisition Price')
+	plt.scatter(train[:,16], train[:,17])
+	plt.xlabel('MMRAcquisitionRetailAveragePrice')
+	plt.ylabel('MMRAcquisitionRetailCleanPrice')
+	plt.savefig('arap_arcp.png')
+
+	plt.figure()
+	plt.title('Scatter Plot of Acquisition and Current Price')
+	plt.scatter(train[:,17], train[:,18])
+	plt.xlabel('MMRAcquisitionRetailCleanPrice')
+	plt.ylabel('MMRCurrentAuctionAveragePrice')
+	plt.savefig('arcp_caap.png')
+
+	plt.figure()
+	plt.scatter(train[:,18], train[:,19])
+	plt.title('Scatter Plot of Current Price')
+	plt.xlabel('MMRCurrentAuctionAveragePrice')
+	plt.ylabel('MMRCurrentAuctionCleanPrice')
+	plt.savefig('caap_cacp.png')
+
+	plt.figure()
+	plt.scatter(train[:,19], train[:,20])
+	plt.title('Scatter Plot of Current Price')
+	plt.xlabel('MMRCurrentAuctionCleanPrice')
+	plt.ylabel('MMRCurrentRetailAveragePrice')
+	plt.savefig('racp_crap.png')
+
+
+	plt.figure()
+	plt.scatter(train[:,20], train[:,21])
+	plt.title('Scatter Plot of Current Price')
+	plt.xlabel('MMRCurrenRetailAveragePrice')
+	plt.ylabel('MMRCurrentRetailCleanPrice')
+	plt.savefig('crap_crcp.png')
+
 '''
 visual_VehAge()
 visual_WheelType()
 
 visual_Odo()
-'''
 visual_CAAP()
+'''
+scatter_odo_AAAP()
+scatter_age_AAAP()
+scatter_acq_prices()
