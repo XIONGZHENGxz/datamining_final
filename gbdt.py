@@ -2,7 +2,7 @@ import numpy as np
 from model import model, index
 import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
-from sklearn.metrics import f1_score, confusion_matrix, auc, roc_curve
+from sklearn.metrics import f1_score, confusion_matrix, auc, roc_curve, accuracy_score
 from sklearn.model_selection import train_test_split
 # from preprocess.preprocessing import preprocess
 from sklearn.model_selection import GridSearchCV
@@ -45,28 +45,29 @@ class GBDT(model):
         best_f1score, best_clf = 0, None
         X_train, X_test, y_train, y_test = train_test_split(X_train, y_train, test_size=0.33, random_state=42)
         # for n_estimators in np.arange(5, 50, 10):
-        for n_estimators in [25]:
+        for n_estimators in [100]:
             # for learning_rate in np.arange(.1,1,.1):
             for learning_rate in [.3]:
                 # for min_samples_leaf in np.arange(1, 21, 10):
-                # for min_samples_leaf in np.arange(1, 40, 10):
                 for min_samples_leaf in [1]:
                     # for max_features in ('auto', 'sqrt', 'log2'):
                     for max_features in [None]:
-                        gbdt = GradientBoostingClassifier(
-                               n_estimators = n_estimators,
-                               learning_rate = learning_rate,
-                               min_samples_leaf = min_samples_leaf,
-                               max_features = max_features
-                               )
-                        # rf = RandomForestClassifier()
-                        gbdt.fit(X_train, y_train)
-                        y_pred = gbdt.predict(X_test)
-                        curr_score = f1_score(y_test, y_pred)
-                        if(curr_score >= best_f1score):
-                            best_f1score = curr_score
-                            best_clf = gbdt
-                        print "n_estimators: ", n_estimators, " learning rate: ", learning_rate, "min_samples_leaf:", min_samples_leaf,"f1 score: ", curr_score
+                        for max_depth in [5]:
+                            gbdt = GradientBoostingClassifier(
+                                   n_estimators = n_estimators,
+                                   learning_rate = learning_rate,
+                                   min_samples_leaf = min_samples_leaf,
+                                   max_features = max_features,
+                                   max_depth = max_depth
+                                   )
+                            # rf = RandomForestClassifier()
+                            gbdt.fit(X_train, y_train)
+                            y_pred = gbdt.predict(X_test)
+                            curr_score = f1_score(y_test, y_pred)
+                            if(curr_score >= best_f1score):
+                                best_f1score = curr_score
+                                best_clf = gbdt
+                            print "n_estimators: ", n_estimators, " learning rate: ", learning_rate, " max_depth: ", max_depth, "min_samples_leaf:", min_samples_leaf,"f1 score: ", curr_score
         
 
         # my_scorer = make_scorer(f1_score)
@@ -116,7 +117,8 @@ class GBDT(model):
         # print "auc score; ", auc_score
         eval_index = index(auc_score, f1score)
         self.roc_curve("roc_gbdt")
-        self.lift_chart(y_pred, y_pred_gbdt_lm, "liftchart_gbdt", "liftchart_gbdt")
+        self.lift_chart(y_pred, y_pred_gbdt_lm, "liftchart of gradient boosting trees classifier", "liftchart_gbdt")
+        print "accuracy score: ", accuracy_score(y_test, y_pred)
         return eval_index
 
     def roc_curve(self, file_path):
@@ -146,6 +148,7 @@ class GBDT(model):
         taille = taille / float(n)
         import matplotlib.pyplot as plt
         #title and axis labels
+        plt.figure()
         plt.title(title)
         plt.xlabel('Sample Size')
         plt.ylabel('Percentage of Badbuy Found')

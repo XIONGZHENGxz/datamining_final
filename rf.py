@@ -2,7 +2,7 @@ import numpy as np
 from model import model, index
 import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import f1_score, confusion_matrix, auc, roc_curve
+from sklearn.metrics import f1_score, confusion_matrix, auc, roc_curve, accuracy_score
 from sklearn.model_selection import train_test_split
 # from preprocess.preprocessing import preprocess
 from sklearn.model_selection import GridSearchCV
@@ -29,22 +29,25 @@ class RF(model):
         for n_estimators in [50]:
             # for min_samples_leaf in np.arange(1, 21, 10):
             for min_samples_leaf in [20]:
-                # for max_features in ('auto', 'sqrt', 'log2'):
-                for max_features in [None]:
-                    rf = RandomForestClassifier(
-                           n_estimators = n_estimators,
-                           min_samples_leaf = min_samples_leaf,
-                           max_features = max_features,
-                           class_weight = "balanced"
-                           )
-                    # rf = RandomForestClassifier()
-                    rf.fit(X_train, y_train)
-                    y_pred = rf.predict(X_test)
-                    curr_score = f1_score(y_test, y_pred)
-                    if(curr_score >= best_f1score):
-                        best_f1score = curr_score
-                        best_clf = rf
-                    print "get f1 score: ", curr_score
+                # for max_features in ('log2', 'sqrt', None):
+                for max_features in [.5]:
+                # for max_features in np.arange(.01, .9, .1):
+                    for max_depth in [None]:
+                        rf = RandomForestClassifier(
+                               n_estimators = n_estimators,
+                               min_samples_leaf = min_samples_leaf,
+                               max_features = max_features,
+                               class_weight = "balanced",
+                               max_depth = max_depth
+                               )
+                        # rf = RandomForestClassifier()
+                        rf.fit(X_train, y_train)
+                        y_pred = rf.predict(X_test)
+                        curr_score = f1_score(y_test, y_pred)
+                        if(curr_score >= best_f1score):
+                            best_f1score = curr_score
+                            best_clf = rf
+                        print "max_features" , max_features, "max_depth: ", max_depth, " f1 score: ", curr_score
         
 
         # my_scorer = make_scorer(f1_score)
@@ -92,7 +95,8 @@ class RF(model):
         eval_index = index(auc_score, f1score)
         # print "y_pred_rf_lm: ", y_pred_rf_lm
         self.roc_curve("roc_rf")
-        self.lift_chart(y_pred, y_pred_rf_lm, "liftchart_rf", "liftchart_rf")
+        self.lift_chart(y_pred, y_pred_rf_lm, "liftchart of random forest classifier", "liftchart_rf")
+        print "accuracy: ", accuracy_score(y_test, y_pred)
         return eval_index
         # return f1score, cm, auc_score
 
@@ -124,6 +128,7 @@ class RF(model):
         taille = taille / float(n)
         import matplotlib.pyplot as plt
         #title and axis labels
+        plt.figure()
         plt.title(title)
         plt.xlabel('Sample Size')
         plt.ylabel('Percentage of Badbuy Found')

@@ -2,7 +2,7 @@ import numpy as np
 from model import model, index
 from sklearn import tree
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import f1_score, confusion_matrix
+from sklearn.metrics import f1_score, confusion_matrix, accuracy_score
 from sklearn.model_selection import train_test_split
 # from preprocess.preprocessing import preprocess
 from sklearn.model_selection import GridSearchCV
@@ -35,12 +35,13 @@ class DT(model):
         best_f1score, best_clf = 0, None
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=42)
         # for min_samples_leaf in np.arange(1, 21, 10):
-        for min_samples_leaf in np.arange(20, 60, 5):
-        # for min_samples_leaf in [21]:
+        # for min_samples_leaf in np.arange(20, 60, 5):
+        for min_samples_leaf in [21]:
             # # for max_features in ('auto', 'sqrt', 'log2'):
             # for max_features in ['sqrt', 'log2', None]:
             for max_features in [None]:
-                for max_depth in np.append([None], np.arange(4, 20, 2)):
+                # for max_depth in np.append([None], np.arange(4, 20, 2)):
+                for max_depth in [None]:
                     dt = DecisionTreeClassifier(
                            min_samples_leaf = min_samples_leaf,
                            max_features = max_features
@@ -83,6 +84,7 @@ class DT(model):
         f1score = f1_score(y_test, y_pred)
         cm = confusion_matrix(y_test, y_pred)
         # return f1score, cm
+        print "accuracy: ", accuracy_score(y_test, y_pred)
         return index(None, f1score)
 
 # data = np.load('preprocess/data.npy')
